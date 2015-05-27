@@ -10,8 +10,9 @@ The Easy-Firewall Suite comes with some scripts:
 *iptablesctl*
 ---
 For the moment only works on INPUT chain.
-Firewall Started == All chains in FILTER table in DROP policy wich means all incomming traffic is dropped ( pings inclusive :). ESTABLISHED and RELATED connections remains active so you are no going to lose your ssh connection for example.
-Example: iptablesctl start
+
+**Firewall Started:** All chains in FILTER table in DROP policy wich means all incomming traffic is dropped ( pings inclusive :). ESTABLISHED and RELATED connections remains active so you are no going to lose your ssh connection for example.
+*Example:* iptablesctl start
 
  Firewall Stopped 	== 	All chains in FILTER table in ACCEPT policy this state is basically
 						all incoming traffic is ALLOWED
