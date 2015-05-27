@@ -1,0 +1,92 @@
+#!/bin/bash
+
+# Easy-IPtables
+################
+#
+# This script is part of Easy-Iptables Suite
+# It allows you to add or delete certain rules on iptables input chain
+#
+# Version: 0.1
+# Author: Pol Jane      pol@zyrcle.com
+#
+# Usage: iptables-add <rule_num>
+#
+# iptables-add -n <num> -c <chain> -a <action> -s <source> -d <destination>
+#
+
+# Here our default values :)
+CHAIN=INPUT
+IPT_BIN="/sbin/iptables"
+rule_number=
+source=0.0.0.0
+destination=
+
+function usage() {
+	echo -e "[ iptables-add usage: iptables-add -n <num> -c <chain> -a <action> -s <source> -d <destination> ]"
+        echo -e "\t\t-n <num>		Specify a rule number"
+        echo -e "\t\t-c <chain> 	Define chain where to add the rule"
+        echo -e "\t\t-a <action> 	Define an action to take if packet(s) match the rule"
+        echo -e "\t\t-s <source> 	Source address ( IP/Hostname )"
+        echo -e "\t\t-d <destination>	Destination address ( IP/Hostname )"
+	echo -e "\t\t-h | --help 	Show this help"
+
+}
+
+if [[ ( $# -lt 4 ) || ( $# -eq "0" ) ]]; then 
+	usage
+fi
+function check_if_ipt() {
+	if [[ ( ! -f $IPT_BIN ) || ( ! -x $IPT_BIN ) ]]; then 
+		echo "ERROR: iptables Not Found"
+		exit 4
+	fi
+}
+check_if_ipt
+# A string with command options
+options=$@
+
+
+# An array with all the arguments
+arguments=($options)
+
+# Loop index
+index=0
+
+for argument in $options
+  do
+    # Incrementing index
+    index=`expr $index + 1`
+
+    # The conditions
+    case $argument in
+      -n)       
+                rule_number=${arguments[index]}
+        ;;
+      -c) 
+                CHAIN=${arguments[index]}
+        ;;
+      -a|--action) 
+                ACTION=${arguments[index]}
+        ;;
+      -s|--source) 
+                source=${arguments[index]}
+        ;;
+      -d|--destination) 
+                destination=${arguments[index]}
+        ;;
+      -p|--port) 
+                port=${arguments[index]}
+        ;;
+    esac
+  done
+
+if [ -z $port ]; then
+        #echo "iptables -A $CHAIN $rule_number -s $source -d $destination -j $ACTION"
+        iptables -I $CHAIN $rule_number -s $source -d $destination -j $ACTION
+else
+        #echo "iptables -A $CHAIN $rule_number -s $source -d $destination -m tcp -p tcp --dport $port -j $ACTION"
+        iptables -I $CHAIN $rule_number -s $source -d $destination -m tcp -p tcp --dport $port -j $ACTION
+fi
+
+
+exit;

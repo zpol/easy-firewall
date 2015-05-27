@@ -1,0 +1,78 @@
+#!/bin/bash
+
+# Easy-IPtables
+################
+#
+# This script is part of Easy-Iptables Suite
+# It allows you to add or delete certain rules on iptables input chain
+#
+# Version: 0.1
+# Author: Pol Jane      pol@zyrcle.com
+#
+# Usage: iptables-add <rule_num>
+#
+# iptables-remove -n <num> -c <chain> 
+#
+
+# Here our default values :)
+CHAIN=INPUT
+IPT_BIN="/sbin/iptables"
+rule_number=
+source=0.0.0.0
+destination=
+
+function usage() {
+	echo -e "[ iptables-remove usage: iptables-remove -n <num> -c <chain> ]"
+        echo -e "\t\t-n <num>		Specify a rule number"
+        echo -e "\t\t-c <chain> 	Define chain where to add the rule"
+	echo -e "\t\t-h | --help 	Show this help"
+
+}
+
+if [[ ( $# -lt 1 ) || ( $# -eq "0" ) ]]; then 
+	usage
+fi
+function check_if_ipt() {
+	if [[ ( ! -f $IPT_BIN ) || ( ! -x $IPT_BIN ) ]]; then 
+		echo "ERROR: iptables Not Found"
+		exit 4
+	fi
+}
+check_if_ipt
+# A string with command options
+options=$@
+
+
+# An array with all the arguments
+arguments=($options)
+
+# Loop index
+index=0
+
+for argument in $options
+  do
+    # Incrementing index
+    index=`expr $index + 1`
+
+    # The conditions
+    case $argument in
+      -n)       
+                rule_number=${arguments[index]}
+        ;;
+      -c) 
+                CHAIN=${arguments[index]}
+        ;;
+      -h|--help) 
+                port=${arguments[index]}
+        ;;
+    esac
+  done
+
+if [ -z $port ]; then
+        iptables -D $CHAIN $rule_number 
+else
+        iptables -D $CHAIN $rule_number 
+fi
+
+
+exit;

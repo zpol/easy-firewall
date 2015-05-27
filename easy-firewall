@@ -1,0 +1,129 @@
+#!/bin/bash
+
+# Easy-IPtables
+################
+#
+# This script is part of Easy-Iptables Suite
+# It allows you to add rules on iptables input chain allowing or denying incomming connection requests
+#
+# Version: 0.1
+# Author: Pol Jane      pol@zyrcle.com
+#
+# easyfirewall allow <port> from <source> to <destination>
+#
+
+# Here our default values :)
+CHAIN=INPUT
+ETH_IFACE="eth0"
+
+function usage() {
+        echo -e "[ easy-firewall usage: easy-firewall allow <port> from <source> to <dest> ]"
+        echo -e "\t\t[allow <port>] Allow a service/port"
+        echo -e "\t\t[deny <port>] Deny a service/port"
+        echo -e "\t\t[from <ip/hostname>] Set source host"
+        echo -e "\t\t[to <ip/hostname>] Set destination host"
+        echo -e "\t\t[-h|help Show help]"
+}
+
+function exit_status() {
+	if [ $? -ne "0" ]; then 
+		echo -e "\e[1;31mError: Something went wrong\e[0m"
+		exit 2
+	else
+		echo -e "\e[1;32mOK\e[0m"
+		exit 0
+	fi
+
+}
+
+function check_syntax() {
+	if [[ ( -z $action ) || ( $action = "from" ) ]]; then
+		echo "I need an action or port (allow|deny)"
+		usage
+		exit 1
+	fi
+	if [ -z $from ]; then
+		echo "I need a source ( from )"
+		usage
+		exit 1
+	fi
+	if [ -z $to ]; then
+		echo "I need a destination"
+		usage
+		exit 1
+	fi
+	if [ $from = "any" ]; then 
+		from="0.0.0.0"
+	fi
+	if [ $from = "me" ]; then 
+		PUB_IP=$(ifconfig $ETH_IFACE |grep "inet" |cut -d: -f2 |awk {' print $1 '}|egrep -o "[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}")
+		from=$PUB_IP
+	fi
+
+	if [ $to = "me" ]; then 
+		PUB_IP=$(ifconfig $ETH_IFACE |grep "inet" |cut -d: -f2 |awk {' print $1 '}|egrep -o "[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}")
+		to=$PUB_IP
+	fi
+	if [ $to = "any" ]; then 
+		to="0.0.0.0"
+	fi
+
+
+}
+
+if [ $# -lt "1" ]; then
+        usage
+fi
+
+# A string with command options
+options=$@
+
+# An array with all the arguments
+arguments=($options)
+
+# Loop index
+index=0
+
+for argument in $options
+  do
+    # Incrementing index
+    index=`expr $index + 1`
+
+    # The conditions
+    case $argument in
+      allow)    
+                port=${arguments[index]}
+               	action="ACCEPT"
+      ;;
+      deny)     
+                port=${arguments[index]}
+                action="DROP"
+      ;;
+      from)     
+                from=${arguments[index]}
+      ;;
+      to) 
+                to=${arguments[index]}
+      ;;
+
+        -h|--help) usage ;;
+    esac
+  done
+
+function add_rule() {
+	check_syntax $port
+        if [ -z $port ] || [ $port = "all" ] ;then
+                #echo "iptables -A $CHAIN -s $1 -d $2 -j $3"
+		echo -n "$action $port from $from to $to: "
+		iptables -A $CHAIN -s $from -d $to -j $3
+        else
+                #echo "iptables -A $CHAIN -s $from -d $to -m tcp -p tcp --dport $4 -j $3"
+		echo -n "$action $port from $from to $to: "
+                iptables -A $CHAIN -s $from -d $to -m tcp -p tcp --dport $4 -j $3
+        fi
+	exit_status
+}
+
+add_rule $from $to $action $port
+
+exit;

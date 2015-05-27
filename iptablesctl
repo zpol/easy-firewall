@@ -1,0 +1,177 @@
+#!/bin/bash 
+
+# Easy-IPtables 
+################
+#
+# This script is part of Easy-Iptables Suite
+# It allows you to control the firewall status
+# 
+# For the moment only works on INPUT chain. 
+# 
+# Firewall Started 	== 	All chains in FILTER table in DROP policy wich means
+#						all incomming traffic is dropped ( pings inclusive :).
+#						ESTABLISHED and RELATED connections remains active so you are no going to lose your ssh connection for example.
+#						Example: iptablesctl start
+#
+# Firewall Stopped 	== 	All chains in FILTER table in ACCEPT policy this state is basically
+#						all incoming traffic is ALLOWED 
+#						Example: iptablesctl stop
+#
+# Reload Firewall 	==	This option reloads the firewall configurtion using /etc/firewall.conf file) 
+#						Example: iptablesctl reload 
+#
+# Save Option 		==	This option saves all actual configuration into /etc/firewall.conf file.
+#						Example: iptablesctl save
+#
+# Load Option 		==	Loads a configuration specified by the filename or path to filename as an argument
+# 						Example: iptablesctl load /tmp/firewall.conf
+#
+# List Option 		==	List the current firewall config
+#						Example: iptablesctl list
+#
+#
+# Version: 0.1
+# Author: Pol Jane	pol@zyrcle.com
+#
+# Usage: iptablesctl <action> 
+# 
+#
+
+# Here our default values :) 
+CHAIN=INPUT
+IPT_CONFIG_FILE="/etc/firewall.conf"
+
+# A string with command options
+options=$@
+
+
+# An array with all the arguments
+arguments=($options)
+
+# Loop index
+index=0
+
+# Function def
+################################################################################
+
+function exit_status() {
+	if [ $? -ne "0" ]; then 
+		echo -e "\e[1;31mError: Something went wrong\e[0m"
+		exit 2
+	else
+		echo -e "\e[1;32mOK\e[0m"
+		exit 0
+	fi
+
+}
+
+function usage() {
+	echo ""
+	echo "Easy-Firewall v0.1 - https://github.com/zpol/easy-firewall"
+	echo ""
+	echo "Usage: $(basename $0) <start|stop|reload|load|save|ilst> "
+	echo ""
+	echo "		- start: Enable firewall, blocking all INPUT traffic"
+	echo "		- stop: Disable firewall, allowing all incomming traffic"
+	echo "		- reload: Flush all rules and reload firewall config with new parameters"
+	echo "		- save: save firewall config in /etc/firewall.conf"
+	echo "		- load <filename>: load firewall parameters from file"
+	echo "		- list: a nice list of incomming traffic rules "
+}
+
+function iptables_start() {
+	iptables -P INPUT DROP
+	iptables -F 
+	iptables -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT
+	iptables -A INPUT -m state --state NEW,RELATED,ESTABLISHED -s 127.0.0.1 -d 0.0.0.0 -j ACCEPT 
+	exit_status
+}
+
+function iptables_stop() {
+	iptables -P INPUT ACCEPT
+	iptables -F 
+	iptables -Z 
+	exit_status
+}
+
+function iptables_list() {
+	echo ""
+	iptables -L INPUT | head -n1
+	echo ""
+	#echo -e "[source]\t[destination]\t[port/service]\t\t\t[action]" ; iptables -L INPUT -n | grep "ACCEPT" |awk {' print $4 "\t" $5 "\t" $6" "$7 "\t\t\t" "\033[32mACCEPT\033[0m" '}
+	echo -e "[#]\t[source]\t[destination]\t[port/service]\t\t[in]\t[out]\t[action]" 
+	echo -e "-----------------------------------------------------------------------------------------"
+	iptables -L INPUT -n -v --line-number | grep ACCEPT |grep -v packets | awk '{ print $1 "\t [" $9 "]\t[" $10 "]\t" $5 "\t\t\t" $7 "\t" $8"\t" "\033[32mACCEPT\033[0m" }'
+	iptables -L INPUT -n -v --line-number | grep DROP |grep -v packets | awk '{ print $1 "\t [" $9 "]\t[" $10 "]\t" $5 "\t\t\t" $7 "\t" $8"\t" "\033[31mDENY\033[0m" }'
+}
+
+check_cfg_file() {
+	if [ ! -f $IPT_CONFIG_FILE ] ; then 
+		echo -e "\e[1;31mWARNING\e[0m"
+		echo "There's no config file to read from. Maybe you should try to create it with `basename $0` save"	
+		exit 2
+	fi
+}
+
+function iptables_save() {
+	iptables-save > $IPT_CONFIG_FILE
+	exit_status
+}
+
+function iptables_reload() {
+	check_cfg_file
+	iptables-restore < $IPT_CONFIG_FILE
+	exit_status
+}
+
+function iptables_load() {
+	iptables-restore < $1
+	exit_status
+}
+
+# Selector
+################################################################################
+
+if [ $# -lt "1" ]; then 
+	usage
+	exit 1
+fi
+
+
+for argument in $options
+  do
+    # Incrementing index
+    index=`expr $index + 1`
+
+    # The conditions
+    case $argument in
+      start) 	echo -n "Starting firewall: "
+		iptables_start	
+	;;
+
+      stop) 	echo -n "Stopping firewall: " 
+		iptables_stop
+	;;
+
+      save) 	echo -n "Saving firewall config - [/etc/firewall.conf]: " 
+		iptables_save
+	;;
+
+      reload) 	echo -n "Reloading iptables rules: " 
+		iptables_reload
+	;;
+
+      load) 	IPT_FILE=${arguments[index]}
+		echo -n "Loading iptables rules from $IPT_FILE: " 
+		iptables_load $IPT_FILE
+	;;
+
+      list) 	echo "Firewall status: "
+		iptables_list 
+	;;
+
+	*|-h|--help) usage ;;
+    esac
+  done
+
+exit;
