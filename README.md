@@ -9,7 +9,7 @@ Of course if you need to do more things that scripts actually does, you should u
 
 The Easy-Firewall Suite comes with some diferent scripts to cover all main firewall administration tasks: 
 
-##easy-firewall
+## easy-firewall
  
 ---
 **Usage:** easy-firewall allow [port] from [source] to [dest]
@@ -22,7 +22,7 @@ Examples:
 	# easy-firewall allow 22 from 192.168.2.32 to 84.66.33.21
 	# easy-firewall deny 143 from 217.126.99.233 to me 
 
-##iptablesctl
+## iptablesctl
 
 ---
 **Usage:** iptablesctl <start|stop|reload|load|save|list>
@@ -55,7 +55,7 @@ For the moment only works on INPUT chain.
 
 
 
-##iptables-add
+## iptables-add
 
 ---
 Adds a rule by default into INPUT chain.
@@ -112,7 +112,7 @@ Using any of these ways you should be able to type in a console any Easy-firewal
 Enjoy! ;)
 
 
-##Requirements
+## Requirements
 -> iptables installed
 
 -> Be root my friend
@@ -120,10 +120,10 @@ Enjoy! ;)
 .
 
 
-##Considerations using firewalls and policies
+## Considerations using firewalls and policies
 To be honest I think the best way to configure your firewall is to DENY all incomming traffic and open port by port whatever you need to get everything working properly. For this reason Easy-Firewall when enables your firewall it keep the current ESTABLISHED and RELATED connections alive and block all the rest. 
 
 About the firewall policy consider using a DROP policy as Easy-firewall uses instead of using ACCEPT policy and drop port by port...It's not a good practice. Just for your information. It's better to have an access denied because firewall is blocking and fix it, than fix the entire server because is has been hacked. ;) 
  
-##Contributions, bugs and more...
+## Contributions, bugs and more...
 Please feel free to send me bugs, bugfixes, or anything related to the app in order to improve it.
